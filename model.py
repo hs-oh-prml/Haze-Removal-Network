@@ -36,7 +36,7 @@ class Generator(nn.Module):
         out_features = in_features * 2
         for _ in range(2):
             model += [
-                nn.Conv2d(in_features, out_features, stride=2, padding=1),
+                nn.Conv2d(in_features, out_features, 3, stride=2, padding=1),
                 nn.InstanceNorm2d(out_features),
                 nn.ReLU(inplace=True)
             ]
@@ -46,16 +46,20 @@ class Generator(nn.Module):
         # Residual Blocks
         for _ in range(n_residual_block):
             model += [ResidualBlock(in_features)]
-
+        
         # Upsampling
-        out_features = in_features // 2
+        out_features = in_features//2
         for _ in range(2):
-            model += [
-                nn.ReflectionPad2d(3),
-                nn.Conv2d(64, output_nc, 7),
-                nn.Tanh()
-            ]
+            model += [  nn.ConvTranspose2d(in_features, out_features, 3, stride=2, padding=1, output_padding=1),
+                        nn.InstanceNorm2d(out_features),
+                        nn.ReLU(inplace=True) ]
+            in_features = out_features
+            out_features = in_features//2
 
+        # Output layer
+        model += [  nn.ReflectionPad2d(3),
+                    nn.Conv2d(64, output_nc, 7),
+                    nn.Tanh() ]
         self.model = nn.Sequential(*model)
 
     def forward(self, x):
