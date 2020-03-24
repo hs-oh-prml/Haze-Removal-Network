@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-
+import torch
 class ResidualBlock(nn.Module):
     def __init__(self, in_features):
         super(ResidualBlock, self).__init__()
@@ -69,7 +69,7 @@ class Discriminator(nn.Module):
     def __init__(self, input_nc):
         super(Discriminator, self).__init__()
 
-        model = [
+        model = [       
             nn.Conv2d(input_nc, 64, 4, stride=2, padding=1),
             nn.LeakyReLU(0.2, inplace=True)
         ]
@@ -92,11 +92,12 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True)
         ]
 
-        model += [nn.Conv2d(512, 1, 4, padding=1)]
+        model += [nn.Conv2d(512, 1, kernel_size=3, stride=1, padding=1)]
 
-        self.model = nn.Sequential(*model)
+        self.model = nn.Sequential(
+            *model,
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = self.model(x)
-
-        return F.avg_pool2d(x, x.size()[2:]).view(x.size()[0], -1)
+        return self.model(x)

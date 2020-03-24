@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--dataroot", type=str, default = "C:/Users/user/Desktop/", help='data folder path')
 parser.add_argument("--epoch", type=int, default=0, help='starting epoch')
-parser.add_argument("--n_epochs", type=int, default=100, help='number of epoch')
+parser.add_argument("--n_epochs", type=int, default=10, help='number of epoch')
 parser.add_argument("--batch_size", type=int, default=1, help='size of the batches')
 parser.add_argument("--lr", type=float, default=0.002, help='initial learning rate')
 parser.add_argument("--size", type=int, default=640, help='size of the data crop')

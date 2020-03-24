@@ -4,6 +4,8 @@ import sys
 
 from torch.autograd import Variable
 import torch
+import torch.nn.functional as F
+
 import numpy as np
 
 def tensor2image(tensor):
