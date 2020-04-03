@@ -40,12 +40,13 @@ def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     netG = Generator(opt.input_nc, opt.output_nc)
-    if opt.epoch != 0:
-        netG.load_state_dict(torch.load('C:/Users/user/Desktop/dehaze/checkpoints/try3_epoch100_of/generator_{}.pth'.format(opt.epoch)))
-        print("Load Model Epoch : {}".format(opt.epoch))
-        netG.to(device)
-
     netD = Discriminator(opt.input_nc)
+
+    # if opt.epoch != 0:
+    #     netG.load_state_dict(torch.load('C:/Users/user/Desktop/dehaze/checkpoints/try3_epoch100_of/generator_{}.pth'.format(opt.epoch)))
+    #     print("Load Model Epoch : {}".format(opt.epoch))
+    #     netG.to(device)
+
     if torch.cuda.is_available():
         print("Use GPU")
         netG = netG.cuda()
@@ -112,48 +113,52 @@ def train():
             # print(pred_real.shape)
             # print(valid.shape)
             
-            loss_gan = criterion_GAN(netD(dehaze), valid)
-            loss_ssim = 1 -pytorch_ssim.ssim(dehaze, gt)
+            # loss_gan = criterion_GAN(netD(dehaze), valid)
+            loss_ssim = 1 - pytorch_ssim.ssim(dehaze, gt)
 
 
-            loss_G = loss_gan + loss_pixel + loss_ssim
+            # loss_G = loss_gan + loss_pixel + loss_ssim
+            loss_G = loss_pixel + loss_ssim + loss_mse
 
             loss_G.backward()
             optimizer_G.step()
 
-            #############################
-            #       Discriminator       #
-            #############################
+            # #############################
+            # #       Discriminator       #
+            # #############################
 
-            optimizer_D.zero_grad()
+            # optimizer_D.zero_grad()
                 
-            # pred_gt = netD(gt)
-            # pred_hz = netD(dehaze.detach())
+            # # pred_gt = netD(gt)
+            # # pred_hz = netD(dehaze.detach())
             
-            loss_gt = criterion_GAN(netD(gt), valid)
-            loss_hz = criterion_GAN(netD(dehaze.detach()), fake)
+            # loss_gt = criterion_GAN(netD(gt), valid)
+            # loss_hz = criterion_GAN(netD(dehaze.detach()), fake)
             
-            # Total loss
-            loss_D = 0.5 * (loss_gt + loss_hz)
+            # # Total loss
+            # loss_D = 0.5 * (loss_gt + loss_hz)
 
-            loss_D.backward()
-            optimizer_D.step()
+            # loss_D.backward()
+            # optimizer_D.step()
 
             #############################
             #            Log            #
             #############################
             batches_done = epoch * len(dataloader) + i
             time_left = time.time() - prev_time
-            print( "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f SSIM: %f] Time: %.3s"
+            # print( "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f SSIM: %f] Time: %.3s"
+            print( "[Epoch %d/%d] [Batch %d/%d] [L1 Loss: %f SSIM Loss: %f MSE Loss: %f]"
             % (
                 (1 + epoch),
                 opt.n_epochs,
                 i,
                 len(dataloader),
-                loss_D.item(),
-                loss_G.item(),
+                # loss_D.item(),
+                # loss_G.item(),
+                loss_pixel.item(),
                 loss_ssim.item(),
-                time_left
+                loss_mse.item(),
+
             ))
             prev_time = time.time()
             
@@ -164,7 +169,7 @@ def train():
         # if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval == 0:
         # Save model checkpoints
         torch.save(netG.state_dict(), "./checkpoints/generator_%d.pth" % (epoch))
-        torch.save(netD.state_dict(), "./checkpoints/discriminator_%d.pth" % (epoch))
+        # torch.save(netD.state_dict(), "./checkpoints/discriminator_%d.pth" % (epoch))
         print("Save model Epoch{}".format(epoch))
 
     end_time = time.time() - start_time

@@ -21,8 +21,8 @@ if __name__ == '__main__':
     MODEL_NAME = opt.model_name
     IMAGE_NAME = opt.image_name
     RESULT_DIR = 'result'
-    # test_list = glob.glob( 'test' + '/*.*')
-    test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/JPEGImages' + '/*.*')
+    test_list = glob.glob( 'test' + '/*.*')
+    # test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/JPEGImages' + '/*.*')
 
     # test_list = ['test/tiananmen2.png']
     # test_list = ['test/tiananmen3.jpg']
