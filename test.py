@@ -4,15 +4,20 @@ from torch.autograd import Variable
 from torchvision.transforms import transforms
 from torchvision.utils import save_image
 
+from model import Network
 from model import Generator
+
 import argparse
 import glob
+
+import os
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_name', default='C:/Users/user/Desktop/test/canyon1.jpg', type=str, help='test image name')
-    parser.add_argument('--model_name', default='generator_19.pth', type=str, help='generator model epoch name')
+    parser.add_argument('--model_name', default='check_point_100.pth', type=str, help='generator model epoch name')
     opt = parser.parse_args()
 
     TEST_MODE = True if torch.cuda.is_available() else False
@@ -26,10 +31,12 @@ if __name__ == '__main__':
 
     # test_list = ['test/tiananmen2.png']
     # test_list = ['test/tiananmen3.jpg']
+    # net = Network(3, 3)
+    net = Generator(3, 3)
 
-    model = Generator(3, 3).eval()
+    model = net.eval()
     # model.load_state_dict(torch.load('./checkpoints/' + MODEL_NAME))
-    model.load_state_dict(torch.load('C:/Users/user/Desktop/dehaze/checkpoints/generator_99.pth'))
+    model.load_state_dict(torch.load('./checkpoints/checkpoint_100.pth'))
     model.cuda()
     
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
@@ -52,7 +59,7 @@ if __name__ == '__main__':
         w, h = image.size
 
         t_info = [
-                # transforms.Resize((h, w), Image.BICUBIC),
+                transforms.Resize((480, 640), Image.BICUBIC),
                 transforms.ToTensor(), 
                 transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
             ]
@@ -72,6 +79,7 @@ if __name__ == '__main__':
         image = transform(image).unsqueeze_(0)
         image = Variable(image.type(Tensor))
         image = image.cuda()
+
         with torch.no_grad():
             dehaze = model(image)
         
@@ -100,7 +108,9 @@ if __name__ == '__main__':
             _, _, o_height, o_width = image.shape
             
         # if o_hieght != d_hieght:
-        result = torch.cat((image, dehaze), -1)
 
-        save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(count), nrow=5, normalize=True)
+        result = torch.cat((image, dehaze), -1)
+        img_name = os.path.basename(img)        
+        save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
+        # save_image(dehaze, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
         print(img + " Done")
