@@ -69,9 +69,9 @@ class InceptionBlock(nn.Module):
         out = self.relu(self.conv3_3(cat1 + cat2 + cat3))
         return out + self.conv1(x)
 
-class Generator(nn.Module):
+class Net1(nn.Module):
     def __init__(self, input_nc, output_nc, n_residual_block = 9):
-        super(Generator, self).__init__()
+        super(Net1, self).__init__()
 
         # Init Convolution block
         model = [
@@ -104,21 +104,115 @@ class Generator(nn.Module):
                         nn.InstanceNorm2d(out_features),
                         nn.ReLU(inplace=True) ]
             in_features = out_features
-            out_features = in_features//2
+            out_features = in_features // 2
 
         # Output layer
         model += [  nn.ReflectionPad2d(3),
                     nn.Conv2d(64, output_nc, 7),
-                    nn.Tanh() ]
+                    nn.Tanh() 
+                    ]
         self.model = nn.Sequential(*model)
         self.tanh = nn.Tanh()
 
     def forward(self, x):
+        # print(x.shape)
+        # print(self.model(x).shape)
         out = x + self.model(x)
-        out = self.tanh(out)
+        out = self.tanh(out)    # normalize [-1, 1]
         return out 
 
+class EncoderBlock(nn.Module):
+    def __init__(self, in_features, out_features, kernel_size):
+        super(EncoderBlock, self).__init__()
+        conv_block = [
+            nn.Conv2d(in_features, out_features, kernel_size, stride=2, padding=1),
+            nn.InstanceNorm2d(in_features),
+            nn.ReLU(inplace=True),            
+        ]
+        self.conv_block = nn.Sequential(*conv_block)
+    def forward(self, x):
+        return self.conv_block(x)
 
+class DecoderBlock(nn.Module):
+    def __init__(self, in_features, out_features, kernel_size):
+        super(DecoderBlock, self).__init__()
+        conv_block = [
+                nn.ConvTranspose2d(in_features, out_features, 3, stride=2, padding=1, output_padding=1),
+                nn.InstanceNorm2d(out_features),
+                nn.ReLU(inplace=True)          
+        ]
+        self.conv_block = nn.Sequential(*conv_block)
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+    def forward(self, x1, x2):
+
+        x1 = self.up(x1)
+         # input is CHW
+        diffY = x2.size()[2] - x1.size()[2]
+        diffX = x2.size()[3] - x1.size()[3]
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                        diffY // 2, diffY - diffY // 2])
+        # if you have padding issues, see
+        x = torch.cat([x2, x1], dim=1)
+
+        return self.conv_block(x)
+
+class Net2(nn.Module):
+    def __init__(self, input_nc, output_nc, n_residual_block = 9):
+        super(Net2, self).__init__()
+
+        # Init Convolution block
+        init = [
+            nn.ReflectionPad2d(3),
+            nn.Conv2d(input_nc, 64, 7),
+            nn.InstanceNorm2d(64),
+            nn.Tanh()
+        ]
+        self.init_block = nn.Sequential(*init)
+
+        # Downsampling
+        in_features = 64
+        out_features = in_features * 2
+
+        self.encoder1 = EncoderBlock(64, 128, 3)
+        self.encoder2 = EncoderBlock(128, 256, 3)
+        self.encoder3 = EncoderBlock(256, 512, 3)
+
+        # Residual Blocks
+        res = []
+        for _ in range(n_residual_block):
+            res += [ResidualBlock(512)]
+        self.residual = nn.Sequential(*res)
+        
+        # Upsampling
+        self.decoder1 = DecoderBlock(1024, 256, 3)
+        self.decoder2 = DecoderBlock(512, 128, 3)
+        self.decoder3 = DecoderBlock(256, 64, 3)
+
+        # Output layer
+        last = [  nn.ReflectionPad2d(3),
+                    nn.Conv2d(64, output_nc, 7),
+                    nn.Tanh() ]
+        self.last_block = nn.Sequential(*last)
+
+        self.tanh = nn.Tanh()
+
+    def forward(self, x):
+        out = self.init_block(x)                # 3, 64
+        encode1 = self.encoder1(out)            # 64, 128
+        encode2 = self.encoder2(encode1)        # 128, 256
+        encode3 = self.encoder3(encode2)        # 256, 512
+
+        residual = self.residual(encode3)       # 512
+
+        out = self.decoder1(residual, encode3)  # 512, 512, 256
+        out = self.decoder2(out, encode2)       # 256, 256, 128
+        out = self.decoder3(out, encode1)       # 128, 128, 64
+
+        out = self.last_block(out)              # 64, 3
+
+        out = self.tanh(x + out)        
+        return out 
 
 class Network(nn.Module):
     def __init__(self, input_nc, output_nc, n_residual_block = 5):
@@ -172,143 +266,3 @@ class Network(nn.Module):
         out = x + self.model(x)
         out = self.tanh(out)
         return out 
-
-class EncoderBlock(nn.Module):
-    def __init__(self, in_features, out_features, kernel_size):
-        super(EncoderBlock, self).__init__()
-        conv_block = [
-            nn.Conv2d(in_features, out_features, kernel_size),
-            nn.InstanceNorm2d(in_features),
-            nn.ReLU(inplace=True),            
-        ]
-        self.conv_block = nn.Sequential(*conv_block)
-    def forward(self, x):
-        return self.conv_block(x)
-
-class DecoderBlock(nn.Module):
-    def __init__(self, in_features, out_features, kernel_size):
-        super(DecoderBlock, self).__init__()
-        conv_block = [
-                nn.ConvTranspose2d(in_features, out_features, 3, stride=2, padding=1, output_padding=1),
-                nn.InstanceNorm2d(out_features),
-                nn.ReLU(inplace=True)          
-        ]
-        self.conv_block = nn.Sequential(*conv_block)
-    def forward(self, x):
-        return self.conv_block(x)
-
-class DenseBlock(nn.Module):
-    def __init__(self, in_features, out_features):
-        super(DenseBlock, self).__init__()
-        self.relu = nn.ReLU(inplace = True)
-        self.instanceNorm = nn.InstanceNorm2d(in_features)
-
-        self.conv1 = nn.Conv2d(in_features, out_features, 3, 1, 1)
-        self.conv2 = nn.Conv2d(out_features, out_features, 3, 1, 1)
-        self.conv3 = nn.Conv2d(out_features * 2, out_features, 3, 1, 1)
-
-        self.conv4 = nn.Conv2d(out_features * 3, out_features, 3, 1, 1)
-        self.conv5 = nn.Conv2d(out_features * 4, out_features, 3, 1, 1)
-
-        self.out = nn.Conv2d(out_features * 3, out_features, 3, 1, 1)
-    def forward(self, x):
-        instanceNorm = self.instanceNorm(x)
-        conv1 = self.relu(self.conv1(instanceNorm))
-        # conv1 = self.instanceNorm(conv1)
-
-        conv2 = self.conv2(conv1)
-        conv2 = self.relu(conv2)
-        # conv2 = self.instanceNorm(conv2)
-
-        c2_dense = self.relu(torch.cat([conv1, conv2], 1))
-
-        conv3 = self.conv3(c2_dense)
-        conv3 = self.relu(conv3)
-        # conv3 = self.instanceNorm(conv3)
-
-        c3_dense = self.relu(torch.cat([conv1, conv2, conv3], 1))
-
-        # conv4 = self.relu(self.conv4(c3_dense))
-        # c4_dense = self.relu(torch.cat([conv1, conv2, conv3, conv4], 1))
-
-
-        out = self.relu(self.out(c3_dense))
-
-        # conv5 = self.relu(self.conv5(c4_dense))
-        # c5_dense = self.relu(torch.cat([conv1, conv2, conv3, conv4, conv5], 1))
-
-        return out
-
-class DownSampling(nn.Module):
-    def __init__(self, in_features, out_features, kernel_size):
-        super(Downsampling, self).__init_()
-
-        
-    def forward(self, x):
-        return 
-
-class UNet(nn.Module):
-    def __init__(self, input_nc, output_nc):
-        super(UNet, self).__init__()
-
-        # Init Convolution block
-        self.init_layer = EncoderBlock(3, 64, 7)
-
-        # Downsampling
-        self.EncoderBlock1 = EncoderBlock(64, 128, 3)
-#        self.EncoderBlock2 = EncoderBlock(128, 256, 3)
-
-        # DenseBlock
-        d_block = []
-        for _ in range(5):
-            d_block += [
-                DenseBlock(128, 128)                
-            ]
-        self.denseblock = nn.Sequential(*d_block)
-        
-        DenseBlock(128, 128)
-        # self.d2 = DenseBlock(256, 256)
-        # self.d3 = DenseBlock(256, 256)
-        # self.d4 = DenseBlock(256, 256)
-        # self.d5 = DenseBlock(256, 256)
-        # self.d6 = DenseBlock(256, 256)
-        # self.d7 = DenseBlock(256, 256)
-        # self.d8 = DenseBlock(256, 256)
-        # self.d9 = DenseBlock(256, 256)
-
-
-        # Upsampling
-#        self.DecoderBlock1 = DecoderBlock(256, 128, 3)
-        self.DecoderBlock2 = DecoderBlock(128, 64, 3)
-        self.DecoderBlock3 = DecoderBlock(64, 32, 3)
-
-        self.output_layer = [  nn.ReflectionPad2d(3),
-                    nn.Conv2d(64, output_nc, 7),
-                    nn.ReLU() ]
-
-        # # Residual Blocks
-        # for _ in range(n_residual_block):
-        #     model += [ResidualBlock(in_features)]
-        
-       
-
-    def forward(self, x):
-        encode = self.init_layer(x)
-        encode = self.EncoderBlock1(encode)
-#        encode = self.EncoderBlock2(encode)
-
-        d = self.denseblock(encode)
-        # d1 = self.denseblock(d)
-        # d2 = self.denseblock(d1)
-        # d3 = self.denseblock(d2)
-        # d4 = self.denseblock(d3)
-        # d5 = self.denseblock(d4)
-        # d6 = self.denseblock(d5 + d3)
-        # d7 = self.denseblock(d6 + d2)
-        # d8 = self.denseblock(d7 + d1)
-
-        decode = self.DecoderBlock2(d)
-        decode = self.DecoderBlock3(decode)
-#        decode = self.DecoderBlock3(decode)
-        out = self.output_layer(decode)
-        return out
