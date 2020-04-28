@@ -5,7 +5,8 @@ from torchvision.transforms import transforms
 from torchvision.utils import save_image
 
 from model import Network
-from model import Generator
+from model import Net1
+from model import Net2
 
 import argparse
 import glob
@@ -32,7 +33,8 @@ if __name__ == '__main__':
     # test_list = ['test/tiananmen2.png']
     # test_list = ['test/tiananmen3.jpg']
     # net = Network(3, 3)
-    net = Generator(3, 3)
+    net = Net1(3, 3)
+    # net = Net2(3, 3)
 
     model = net.eval()
     # model.load_state_dict(torch.load('./checkpoints/' + MODEL_NAME))
@@ -57,9 +59,13 @@ if __name__ == '__main__':
         # .convert('RGB')
 
         w, h = image.size
+        if w % 4 != 0:
+            w = w - (w % 4)
+        if h % 4 != 0:
+            h = h - (h % 4)
 
         t_info = [
-                transforms.Resize((480, 640), Image.BICUBIC),
+                transforms.Resize((h, w), Image.BICUBIC),
                 transforms.ToTensor(), 
                 transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
             ]
