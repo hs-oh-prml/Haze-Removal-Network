@@ -20,7 +20,6 @@ from options import opt
 import pytorch_ssim
 import itertools
 
-import time
 import matplotlib.pyplot as plt
 
 
@@ -150,7 +149,7 @@ def train():
                 
         # Save model checkpoints
         torch.save(net.state_dict(), "./checkpoints/checkpoint_%d.pth" % (epoch + 1))
-        print("Save model Epoch{}".format(epoch))
+        print("Save model Epoch{}".format(epoch + 1))
 
         loss_list.append(np.mean(temp_loss_list))
 
