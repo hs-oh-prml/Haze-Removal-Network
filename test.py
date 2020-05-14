@@ -14,6 +14,7 @@ import glob
 import os
 
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -28,7 +29,9 @@ if __name__ == '__main__':
     IMAGE_NAME = opt.image_name
     RESULT_DIR = 'result'
     # test_list = glob.glob( 'test' + '/*.*')
-    test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/JPEGImages' + '/*.*')
+    # test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/JPEGImages' + '/*.*')
+    # test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/selected' + '/*.*')
+    test_list = glob.glob( 'C:/Users/user/Desktop/data/val_hz' + '/*.*')
 
     # test_list = ['test/tiananmen2.png']
     # test_list = ['test/tiananmen3.jpg']
@@ -38,7 +41,9 @@ if __name__ == '__main__':
 
     model = net.eval()
     # model.load_state_dict(torch.load('./checkpoints/' + MODEL_NAME))
-    model.load_state_dict(torch.load('./checkpoints/checkpoint_100.pth'))
+    # model.load_state_dict(torch.load('./checkpoints/checkpoint_100.pth'))
+    model.load_state_dict(torch.load('./checkpoints/checkpoint_90.pth'))
+
     model.cuda()
     
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
@@ -59,17 +64,24 @@ if __name__ == '__main__':
         # .convert('RGB')
 
         w, h = image.size
+        # print(h)
+        # print(w)
+
         if w % 4 != 0:
             w = w - (w % 4)
         if h % 4 != 0:
             h = h - (h % 4)
 
+        # print(h)
+        # print(w)
         t_info = [
+                # transforms.Resize((480, 640), Image.BICUBIC),
                 transforms.Resize((h, w), Image.BICUBIC),
-                transforms.ToTensor(), 
+                transforms.ToTensor(),
                 transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
             ]
 
+        
         # w, h = image.size
         # if w > 2000 or h > 2000:
         #     t_info = [
@@ -82,41 +94,17 @@ if __name__ == '__main__':
         
         transform = transforms.Compose(t_info)
                 
+
         image = transform(image).unsqueeze_(0)
         image = Variable(image.type(Tensor))
         image = image.cuda()
 
         with torch.no_grad():
             dehaze = model(image)
-        
-        # print(img)
-        # print(image.shape)
-        # print(dehaze.shape)
-        _, _, o_height, o_width = image.shape
-        _, _, d_height, d_width = dehaze.shape
-        # print("Origin size: ({}, {}), Dehaze size: ({}, {})".format(o_width, o_height, d_width, d_height))
-
-        if o_height != d_height:
-            row = torch.zeros((1, 3, 1, o_width)).cuda()
-            gap = d_height - o_height            
-            for i in range(gap):
-                image = torch.cat((image, row), 2)
-            # print("Resize height: ({})".format(image.shape))
-            _, _, o_height, o_width = image.shape
-            
-        if o_width != d_width:
-            col = torch.zeros((1, 3, o_height, 1)).cuda()
-            gap = d_width - o_width
-            
-            for i in range(gap):
-                image = torch.cat((image, col), 3)
-            # print("Resize width: ({})".format(image.shape))
-            _, _, o_height, o_width = image.shape
-            
-        # if o_hieght != d_hieght:
 
         result = torch.cat((image, dehaze), -1)
         img_name = os.path.basename(img)        
+        # save_image(dehaze, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
         save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
         # save_image(dehaze, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
         print(img + " Done")

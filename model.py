@@ -9,11 +9,11 @@ class ResidualBlock(nn.Module):
             nn.ReflectionPad2d(1),
             nn.Conv2d(in_features, in_features, 3),
             nn.InstanceNorm2d(in_features),
-            nn.ReLU(inplace=True),
+            nn.Tanh(),
             nn.ReflectionPad2d(1),
             nn.Conv2d(in_features, in_features, 3),
             nn.InstanceNorm2d(in_features),
-            nn.ReLU(inplace=True)            
+            nn.Tanh()
         ]
         self.conv_block = nn.Sequential(*conv_block)
 
@@ -88,7 +88,7 @@ class Net1(nn.Module):
             model += [
                 nn.Conv2d(in_features, out_features, 3, stride=2, padding=1),
                 nn.InstanceNorm2d(out_features),
-                nn.ReLU(inplace=True)
+                nn.Tanh()
             ]
             in_features = out_features
             out_features = in_features * 2
@@ -102,7 +102,9 @@ class Net1(nn.Module):
         for _ in range(2):
             model += [  nn.ConvTranspose2d(in_features, out_features, 3, stride=2, padding=1, output_padding=1),
                         nn.InstanceNorm2d(out_features),
-                        nn.ReLU(inplace=True) ]
+                        nn.Tanh()
+                        ]
+
             in_features = out_features
             out_features = in_features // 2
 
@@ -112,13 +114,21 @@ class Net1(nn.Module):
                     nn.Tanh() 
                     ]
         self.model = nn.Sequential(*model)
+        # final = [
+        #     nn.Conv2d(3, 3, kernel_size=1),
+        #     nn.Tanh()
+        # ]
+        # self.final_block = nn.Sequential(*final)
         self.tanh = nn.Tanh()
+        
 
     def forward(self, x):
         # print(x.shape)
         # print(self.model(x).shape)
         out = x + self.model(x)
-        out = self.tanh(out)    # normalize [-1, 1]
+        out = self.tanh(out)
+        # out = self.final_block(out)
+        # normalize [-1, 1]
         return out 
 
 class EncoderBlock(nn.Module):
@@ -142,6 +152,18 @@ class DecoderBlock(nn.Module):
                 nn.ReLU(inplace=True)          
         ]
         self.conv_block = nn.Sequential(*conv_block)
+    def forward(self, x):
+        return self.conv_block(x)
+
+class DecoderBlockX(nn.Module):
+    def __init__(self, in_features, out_features, kernel_size):
+        super(DecoderBlockX, self).__init__()
+        conv_block = [
+                nn.ConvTranspose2d(in_features, out_features, 3, stride=2, padding=1, output_padding=1),
+                nn.InstanceNorm2d(out_features),
+                nn.ReLU(inplace=True)          
+        ]
+        self.conv_block = nn.Sequential(*conv_block)
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
     def forward(self, x1, x2):
 
@@ -158,7 +180,7 @@ class DecoderBlock(nn.Module):
         return self.conv_block(x)
 
 class Net2(nn.Module):
-    def __init__(self, input_nc, output_nc, n_residual_block = 9):
+    def __init__(self, input_nc, output_nc, n_residual_block = 11):
         super(Net2, self).__init__()
 
         # Init Convolution block
@@ -185,9 +207,9 @@ class Net2(nn.Module):
         self.residual = nn.Sequential(*res)
         
         # Upsampling
-        self.decoder1 = DecoderBlock(1024, 256, 3)
-        self.decoder2 = DecoderBlock(512, 128, 3)
-        self.decoder3 = DecoderBlock(256, 64, 3)
+        self.decoder1 = DecoderBlock(512, 256, 3)
+        self.decoder2 = DecoderBlock(256, 128, 3)
+        self.decoder3 = DecoderBlock(128, 64, 3)
 
         # Output layer
         last = [  nn.ReflectionPad2d(3),
@@ -198,20 +220,28 @@ class Net2(nn.Module):
         self.tanh = nn.Tanh()
 
     def forward(self, x):
-        out = self.init_block(x)                # 3, 64
-        encode1 = self.encoder1(out)            # 64, 128
+        init = self.init_block(x)                # 3, 64
+        encode1 = self.encoder1(init)            # 64, 128
+        # print(encode1.shape)
         encode2 = self.encoder2(encode1)        # 128, 256
+        # print(encode2.shape)
         encode3 = self.encoder3(encode2)        # 256, 512
+        # print(encode3.shape)
 
         residual = self.residual(encode3)       # 512
+        # print(residual.shape)
 
-        out = self.decoder1(residual, encode3)  # 512, 512, 256
-        out = self.decoder2(out, encode2)       # 256, 256, 128
-        out = self.decoder3(out, encode1)       # 128, 128, 64
-
+        out = self.decoder1(residual) + encode2           # 512, 512, 256
+        # print(out.shape)
+        out = self.decoder2(out) + encode1                # 256, 256, 128
+        # print(out.shape)
+        out = self.decoder3(out) + init               # 128, 128, 64
+        # print(out.shape)
         out = self.last_block(out)              # 64, 3
-
+        # print(out.shape)
         out = self.tanh(x + out)        
+        # print(out.shape)
+
         return out 
 
 class Network(nn.Module):

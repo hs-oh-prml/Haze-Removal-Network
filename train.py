@@ -2,7 +2,10 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torchvision.utils import save_image
+
 import torch
+import torch.nn as nn 
+import torch.nn.functional as F
 
 from PIL import Image
 import numpy as np
@@ -21,6 +24,9 @@ import pytorch_ssim
 import itertools
 
 import matplotlib.pyplot as plt
+
+import cv2
+
 
 
 
@@ -64,7 +70,7 @@ def train():
         net = net.cuda()
     # net.apply(weights_init)
     # Loss
-    criterion_content = torch.nn.MSELoss().to(device)
+    criterion_edge = torch.nn.L1Loss().to(device)
     criterion_pixel = torch.nn.L1Loss().to(device)
     
     # Optimizer
@@ -109,16 +115,73 @@ def train():
             optimizer.zero_grad()
             dehaze = net(hz)
 
+            # Compute Edge Loss
+            sobel = torch.Tensor(np.array([[
+                [
+                [-1,0,1],
+                [-2,0,2],                
+                [-1,0,1]
+                ],
+                [
+                [-1,0,1],
+                [-2,0,2],                
+                [-1,0,1]
+                ],
+                [
+                [-1,0,1],
+                [-2,0,2],                
+                [-1,0,1]
+                ],
+            ]], dtype=np.float64)).cuda()
+
+            # edge_hz = F.conv2d(hz, sobel, padding=1)
+            edge_dhz = F.conv2d(dehaze, sobel, padding=1)
+            edge_gt = F.conv2d(gt, sobel, padding=1)
+            
+            # edge_loss = criterion_edge(edge_dhz, edge_gt)
+
             loss_l1 = criterion_pixel(dehaze, gt)
             # loss_mse = criterion_content(dehaze, gt)
             loss_ssim = 1 - pytorch_ssim.ssim(dehaze, gt)
+            loss_edge = criterion_edge(edge_dhz, edge_gt)
             
-            loss_l1 = loss_l1                   # L1 Loss: [0, 1]   
-            loss_ssim = loss_ssim               # SSIM Loss: [0, 1]
-                                                # 9 : 1
-            loss = 0.05 * loss_ssim + 0.95 * loss_l1    # Nomalize [0, 1] 
+            # loss_l1 = loss_l1                   # L1 Loss: [0, 1]   
+            # loss_ssim = loss_ssim               # SSIM Loss: [0, 1]
+                                                  # 0 : 1 : 1
+            loss = 0 * loss_ssim + 1 * loss_l1 + loss_edge    # Nomalize [0, 1] 
             loss.backward()
             optimizer.step()
+
+            #######################################################################
+            ############################### To Test ############################### 
+            ############################## Show Edge ############################## 
+            #######################################################################
+
+            # test_hz = edge_hz.cpu().detach().numpy()
+            # test_hz = np.array([test_hz[0][0], test_hz[0][0], test_hz[0][0]])
+            # test_dhz = edge_dhz.cpu().detach().numpy()
+            # test_dhz = np.array([test_dhz[0][0], test_dhz[0][0], test_dhz[0][0]])
+            # test_gt = edge_gt.cpu().detach().numpy()
+            # test_gt = np.array([test_gt[0][0], test_gt[0][0], test_gt[0][0]])
+
+            # print(edge_loss.data)
+            # print(pixel_loss.data)
+
+            # plt.subplot(2,3,1)
+            # plt.imshow(np.transpose(test_hz, (1,2,0)), interpolation="bicubic")
+            # plt.subplot(2,3,2)
+            # plt.imshow(np.transpose(test_dhz, (1,2,0)), interpolation="bicubic")
+            # plt.subplot(2,3,3)
+            # plt.imshow(np.transpose(test_gt, (1,2,0)), interpolation="bicubic")
+            # plt.subplot(2,3,4)
+            # plt.imshow(np.transpose(hz.cpu().detach().numpy()[0], (1,2,0)), interpolation="bicubic")
+            # plt.subplot(2,3,5)
+            # plt.imshow(np.transpose(dehaze.cpu().detach().numpy()[0], (1,2,0)), interpolation="bicubic")
+            # plt.subplot(2,3,6)
+            # plt.imshow(np.transpose(gt.cpu().detach().numpy()[0], (1,2,0)), interpolation="bicubic")
+            # plt.show()
+            # break
+            #######################################################################
 
             #############################
             #            Log            #
@@ -126,7 +189,7 @@ def train():
             batches_done = epoch * len(dataloader) + i
             time_left = time.time() - prev_time
 
-            print( "[Epoch %d/%d] [Data %d/%d] [SSIM Loss: %f L1 Loss: %f TOTAL Loss: %f] [TIME: %.4s]"
+            print( "[Epoch %d/%d] [Data %d/%d] [SSIM Loss: %f L1 Loss: %f Edge Loss: %f TOTAL Loss: %f] [TIME: %.4s]"
             % (
                 (1 + epoch),
                 opt.n_epochs,
@@ -134,6 +197,7 @@ def train():
                 len(dataloader),
                 loss_ssim.item(),
                 loss_l1.item(),
+                loss_edge.item(),
                 loss,
                 time_left
             ))
