@@ -17,6 +17,7 @@ import os
 
 if __name__ == '__main__':
 
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_name', default='C:/Users/user/Desktop/test/canyon1.jpg', type=str, help='test image name')
     parser.add_argument('--model_name', default='check_point_100.pth', type=str, help='generator model epoch name')
@@ -24,25 +25,47 @@ if __name__ == '__main__':
 
     TEST_MODE = True if torch.cuda.is_available() else False
 
+    
+    # Information of Train
+    # train_info = "all_tanh_sobel_l1_19"
+    # train_info = "TEST"
+    # train_info = "all_tanh_LoG3x3_l1_19_rb96"
+
+    # train_info = "all_tanh_LoG3x3_l1_19_rb16"
+    # train_info = "ReLU_LoG3x3_l1_19_rb16_kernel11"
+    # train_info = "ReLU_LoG3x3_l1_19_rb16_kernel11_linear"
+    # train_info = "ReLU_LoG3x3_l1_19_rb32_kernel5"
+    # train_info = "LoG3x3_l1_19_rb16_kernel16_2_double_ed"
+    # train_info = "LoG3x3_l1_19_rb16_kernel16_2_double_Ied_4"
+    # train_info = "LoG3x3_l1_19_ib9_kernel3"
+    # train_info = "Reverse_ED"
+    # train_info = "bottle_neck_64_unet_mse_group_norm"
+    # train_info = ""
+    # checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
+    checkpoint_dir = "./checkpoints"
+
+    # RESULT_DIR = "./result/result_{}".format(train_info)
+    RESULT_DIR = "./result"
+
+    if not(os.path.isdir(checkpoint_dir)):
+        os.makedirs(os.path.join(checkpoint_dir))
+
+    if not(os.path.isdir(RESULT_DIR)):
+        os.makedirs(os.path.join(RESULT_DIR))
 
     MODEL_NAME = opt.model_name
     IMAGE_NAME = opt.image_name
-    RESULT_DIR = 'result'
-    # test_list = glob.glob( 'test' + '/*.*')
+    test_list = glob.glob( 'test' + '/*.*')
     # test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/JPEGImages' + '/*.*')
     # test_list = glob.glob( 'C:/Users/user/Desktop/RTTS/RTTS/selected' + '/*.*')
-    test_list = glob.glob( 'C:/Users/user/Desktop/data/val_hz' + '/*.*')
+    # test_list = glob.glob( 'C:/Users/user/Desktop/data/val_hz' + '/*.*')
 
-    # test_list = ['test/tiananmen2.png']
-    # test_list = ['test/tiananmen3.jpg']
-    # net = Network(3, 3)
     net = Net1(3, 3)
-    # net = Net2(3, 3)
 
     model = net.eval()
     # model.load_state_dict(torch.load('./checkpoints/' + MODEL_NAME))
-    # model.load_state_dict(torch.load('./checkpoints/checkpoint_100.pth'))
-    model.load_state_dict(torch.load('./checkpoints/checkpoint_90.pth'))
+
+    model.load_state_dict(torch.load(checkpoint_dir + '/checkpoint_100.pth'))
 
     model.cuda()
     
@@ -53,12 +76,6 @@ if __name__ == '__main__':
         count = count + 1
         # if count == 50: break
 
-        # transform = transforms.Compose([
-        #     transforms.ToTensor(), 
-        #     transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
-        #     ]
-        # )
-
         image = Image.open(img).convert('RGB')
         # print(image.size)
         # .convert('RGB')
@@ -66,12 +83,19 @@ if __name__ == '__main__':
         w, h = image.size
         # print(h)
         # print(w)
+        if w > 2000:
+            w = w // 2
+            h = h // 2
+        if h > 2000:
+            w = w // 2
+            h = h // 2
 
-        if w % 4 != 0:
-            w = w - (w % 4)
-        if h % 4 != 0:
-            h = h - (h % 4)
-
+        bias = 4
+        if w % bias != 0:
+            w = w - (w % bias)
+        if h % bias != 0:
+            h = h - (h % bias)
+        
         # print(h)
         # print(w)
         t_info = [
