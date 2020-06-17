@@ -29,7 +29,7 @@ for index in range(1445):
     gt_depth = np.swapaxes(gt_depth, 0, 1)
 
     #beta
-    beta = random.uniform(0.4, 1.6)
+    beta = random.uniform(1.6, 2.0)
     tx1 = np.exp(-beta * gt_depth)
     
     #A

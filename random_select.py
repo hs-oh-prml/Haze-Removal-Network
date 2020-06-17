@@ -19,14 +19,6 @@ data_list = []
 for i in range(size):
     data_list.append((hz_img[i], gt_img[i]))
 
-# print(data_list[500][0])
-# print(data_list[500][1])
-# select = random.choice(data_list)
-# select = data_list[500]
-
-# shutil.move(select[0], val_hz)
-# shutil.move(select[1], val_gt)
-
 for i in range(10):
     select = random.choice(data_list)
     print(select[0])

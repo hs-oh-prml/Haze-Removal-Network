@@ -16,8 +16,7 @@ class ImageDataSet(Dataset):
         self.transform = transforms.Compose(transforms_)
         self.hz_img = sorted(glob.glob(os.path.join(root, 'data/hz') + '/*.*'))
         self.gt_img = sorted(glob.glob(os.path.join(root, 'data/gt') + '/*.*'))
-        # print(len(self.hz_img))
-        # print(len(self.gt_img))
+
     def __getitem__(self, index):
         item_hz = self.transform(Image.open(self.hz_img[index % len(self.hz_img)]))
         item_gt = self.transform(Image.open(self.gt_img[index % len(self.gt_img)]))
