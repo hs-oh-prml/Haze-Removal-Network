@@ -1,6 +1,5 @@
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import save_image
 from torch.autograd import Variable
 from torchsummary import summary
@@ -12,12 +11,6 @@ from PIL import Image
 import numpy as np
 
 from model import Net1
-from model import Net2
-from model import Net3
-from model import Net4
-from model import Net5
-from model import Net6
-
 
 from datasets import ImageDataSet
 
@@ -32,26 +25,21 @@ import matplotlib.pyplot as plt
 import cv2
 import os
 import colorsys
+
 # Information of Train
 train_info = ""
 
-if train_info != ""
+if train_info != "":
     checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
     sample_dir = "./images/sample_{}".format(train_info)
-    log_dir = "./runs/log_{}".format(train_info)
 else:
     checkpoint_dir = "./checkpoints/"
     sample_dir = "./images/"
-    log_dir = "./runs/"
 
 if not(os.path.isdir(checkpoint_dir)):
     os.makedirs(os.path.join(checkpoint_dir))
 if not(os.path.isdir(sample_dir)):
     os.makedirs(os.path.join(sample_dir))
-if not(os.path.isdir(log_dir)):
-    os.makedirs(os.path.join(log_dir))
-
-writer = SummaryWriter(log_dir)
 
 def save_images(batches_done, dataloader, net, hz, gt, dehaze):
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
@@ -60,28 +48,28 @@ def save_images(batches_done, dataloader, net, hz, gt, dehaze):
 
     # Edge Detection Filter
     LoG5x5 = torch.Tensor(np.array([[
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ],
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ],
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ]
-            ]], dtype=np.float64)).cuda()
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ]
+                ]], dtype=np.float64)).cuda()
 
 
     edge_hz = F.conv2d(hz, LoG5x5, padding=2) 
@@ -187,16 +175,13 @@ def train():
             edge_dhz = F.conv2d(dehaze, LoG5x5, padding=2)
             edge_gt = F.conv2d(gt, LoG5x5, padding=2)
 
-            edge_dhz = edge_dhz * 255
-            edge_gt = edge_gt * 255
-            norm_dz = dehaze * 255
-            norm_gt = gt * 255
-
             loss_edge = criterion_edge(edge_dhz, edge_gt)
-            loss_mse = criterion_mse(norm_dz, norm_gt)
+            loss_mse = criterion_mse(dehaze, gt)
 
-            loss = loss_mse + loss_edge    # Nomalize [0, 1] 
+            a = 0.01                    # lambda
+            loss_edge = a * loss_edge
 
+            loss = loss_mse + loss_edge
             loss.backward()
             optimizer.step()
 
