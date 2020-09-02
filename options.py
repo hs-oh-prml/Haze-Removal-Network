@@ -5,7 +5,7 @@ import data
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--dataroot", type=str, default = "C:/Users/user/Desktop/", help='data folder path')
+parser.add_argument("--dataroot", type=str, default = "C:/Users/users/Desktop/", help='data folder path')
 parser.add_argument("--epoch", type=int, default=0, help='starting epoch')
 parser.add_argument("--n_epochs", type=int, default=100, help='number of epoch')
 parser.add_argument("--batch_size", type=int, default=1, help='size of the batches')

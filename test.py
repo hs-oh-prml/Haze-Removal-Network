@@ -17,8 +17,8 @@ if __name__ == '__main__':
 
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--image_name', default='C:/Users/user/Desktop/test/canyon1.jpg', type=str, help='test image name')
-    parser.add_argument('--model_name', default='check_point_100.pth', type=str, help='generator model epoch name')
+    parser.add_argument('--test_path', default='test/*.*', type=str, help='test set path')
+    parser.add_argument('--model_name', default='checkpoint_100.pth', type=str, help='model epoch')
     opt = parser.parse_args()
 
     TEST_MODE = True if torch.cuda.is_available() else False
@@ -35,13 +35,13 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(RESULT_DIR))
 
     MODEL_NAME = opt.model_name
-    IMAGE_NAME = opt.image_name
-    test_list = glob.glob('test/*.*')
+    TEST_PATH = opt.test_path
+    test_list = glob.glob('{}'.format(TEST_PATH))
 
     net = Net1(3, 3)
 
     model = net.eval()
-    model.load_state_dict(torch.load(checkpoint_dir + '/checkpoint_100.pth'))
+    model.load_state_dict(torch.load(checkpoint_dir + '/{}'.format(MODEL_NAME)))
     model.cuda()
     
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
@@ -51,6 +51,7 @@ if __name__ == '__main__':
         count = count + 1
 
         image = Image.open(img).convert('RGB')
+
         w, h = image.size
         if w > 2000:
             w = w // 4
@@ -68,7 +69,6 @@ if __name__ == '__main__':
         t_info = [
                 transforms.Resize((h, w), Image.BICUBIC),
                 transforms.ToTensor(),
-                transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
             ]
         
         transform = transforms.Compose(t_info)
@@ -82,6 +82,8 @@ if __name__ == '__main__':
             dehaze = model(image)
 
         result = torch.cat((image, dehaze), -1)
-        img_name = os.path.basename(img)        
+        img_name = os.path.basename(img)
+
         save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
+
         print(img + " Done")
