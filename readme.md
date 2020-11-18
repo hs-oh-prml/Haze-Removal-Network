@@ -14,8 +14,7 @@
 
 ### Directory
 
-```
-
+.
 +-- checkpoints
 |   +-- checkpoint_100.pth
 +-- images
@@ -31,5 +30,3 @@
 +-- train.py
 +-- test_analysis.py
 +-- model_analysis.py
-
-```
