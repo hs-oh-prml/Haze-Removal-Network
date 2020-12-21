@@ -13,6 +13,7 @@ from PIL import Image
 import numpy as np
 import math 
 import os
+from torchvision.utils import save_image
 
 class ResidualBlockBottleNeck(nn.Module):
     def __init__(self, in_features):
@@ -91,6 +92,8 @@ class Net1(nn.Module):
         residualBlock3_list = []
         for _ in range(n_residual_block):
             residualBlock3_list += [ResidualBlockBottleNeck(in_features * 4)]
+            # residualBlock3_list += [ResidualBlock(in_features * 4)]
+
 
         self.residualBlock3 = nn.Sequential(*residualBlock3_list)
        
@@ -121,18 +124,18 @@ class Net1(nn.Module):
         
     def forward(self, x):
 
-        histogram(x[0], "input")
+        histogram(x[0], "(1) input")
         idx = 0
         # for layer in x[0]:
         #     idx = idx + 1
         #     histogram(layer, "input_{}".format(idx), "input")
 
         init_block = self.init_block(x)
-        histogram(init_block, "pre_tanh_init_block")
+        histogram(init_block, "(2) pre_tanh_init_block")
         init_block = self.tanh(init_block)
 
         idx = 0
-        histogram(init_block, "post_tanh_init_block")
+        histogram(init_block, "(3) post_tanh_init_block")
         # for layer in init_block[0]:
         #     idx = idx + 1
         #     histogram(layer, "init_block_{}".format(idx), "init_block")
@@ -142,9 +145,9 @@ class Net1(nn.Module):
 
         downSampleing1 = self.downSampleing1(init_block)
 
-        histogram(downSampleing1, "pre_relu_downSampling1")
+        histogram(downSampleing1, "(4) pre_relu_downSampling1")
         downSampleing1 = self.relu(downSampleing1)
-        histogram(downSampleing1, "post_relu_downSampling1")
+        histogram(downSampleing1, "(5) post_relu_downSampling1")
 
         # print(downSampleing1.shape)
         idx = 0
@@ -157,9 +160,9 @@ class Net1(nn.Module):
 
         downSampleing2 = self.downSampleing2(downSampleing1)
 
-        histogram(downSampleing2, "pre_relu_downSampling2")
+        histogram(downSampleing2, "(6) pre_relu_downSampling2")
         downSampleing2 = self.relu(downSampleing2)
-        histogram(downSampleing2, "post_relu_downSampling2")
+        histogram(downSampleing2, "(7) post_relu_downSampling2")
         # idx = 0
         # for layer in downSampleing2[0]:
         #     idx = idx + 1
@@ -168,7 +171,7 @@ class Net1(nn.Module):
             # writer.add_histogram("post_encoder_block2", layer.clone().cpu().data.numpy(), idx)
 
         residualBlock3 = self.residualBlock3(downSampleing2)
-        histogram(residualBlock3, "residualBlock3")
+        histogram(residualBlock3, "(8) residualBlock3")
 
         # idx = 0
         # for layer in residualBlock3[0]:
@@ -178,9 +181,9 @@ class Net1(nn.Module):
         #     writer.add_histogram("post_residualmodule", layer.clone().cpu().data.numpy(), idx)
 
         upSampling1 = self.upSampling1(torch.cat([downSampleing2, residualBlock3], 1))          # 128
-        histogram(upSampling1, "pre_relu_upSampling1")
+        histogram(upSampling1, "(9) pre_relu_upSampling1")
         upSampling1 = self.relu(upSampling1)
-        histogram(upSampling1, "post_rele_upSampling1")
+        histogram(upSampling1, "(10) post_rele_upSampling1")
         # idx = 0
         # for layer in upSampling1[0]:
         #     idx = idx + 1
@@ -188,9 +191,9 @@ class Net1(nn.Module):
         #     writer.add_histogram("post_decoder_block1", layer.clone().cpu().data.numpy(), idx)
 
         upSampling2 = self.upSampling2(torch.cat([upSampling1, downSampleing1], 1))          # 64
-        histogram(upSampling2, "pre_relu_upSampling2")
+        histogram(upSampling2, "(11) pre_relu_upSampling2")
         upSampling2 = self.relu(upSampling2)
-        histogram(upSampling2, "post_relu_upSampling2")
+        histogram(upSampling2, "(12) post_relu_upSampling2")
         # idx = 0
         # for layer in upSampling2[0]:
         #     idx = idx + 1
@@ -199,9 +202,9 @@ class Net1(nn.Module):
         #     writer.add_histogram("post_decoder_block2", layer.clone().cpu().data.numpy(), idx)
 
         out_block = self.out_block(upSampling2)
-        histogram(out_block, "pre_tanh_out_block")
+        histogram(out_block, "(13) pre_tanh_out_block")
         out_block = self.tanh(out_block)
-        histogram(out_block, "post_tanh_out_block")
+        histogram(out_block, "(14) post_tanh_out_block")
         # idx = 0
         # for layer in out_block[0]:
         #     idx = idx + 1
@@ -212,16 +215,16 @@ class Net1(nn.Module):
         out = x + out_block
 
         # J = I + R
-        histogram(out, "output")
+        histogram(out, "(15) output")
         hist1 = torch.histc(x, bins=100, min=-1, max=1).clone().cpu().data.numpy()
         hist2 = torch.histc(out_block, bins=100, min=-1, max=1).clone().cpu().data.numpy()
         fig = plt.figure()
         plt.bar(np.arange(100), hist1, color='b')
         plt.bar(np.arange(100), hist2, color='r', bottom=hist1)
         plt.xticks(np.arange(100, step=10), ["%.2f" %x for x in np.arange(-1, 1, 0.2)], rotation=30)
-        plt.savefig("./histogram/x_out_block.png", dpi=300)
+        plt.savefig("./histogram/(16) x_out_block.png", dpi=300)
         plt.close()
-
+                
         return out
 
 def histogram(tensor, name, dir=""):
@@ -231,15 +234,10 @@ def histogram(tensor, name, dir=""):
         os.makedirs(os.path.join(path))
 
     f = open(path + "/{}.txt".format(name), 'w')
-
-    print(tensor.shape)
     
     MAX = torch.max(tensor).cpu().data
     MIN = torch.min(tensor).cpu().data
-
-    print(MAX, MIN)
     BINS = 100
-    print(tensor.shape)
     
     hist = torch.histc(tensor, bins=BINS, min=MIN, max=MAX).clone().cpu().data.numpy()
 
@@ -247,7 +245,7 @@ def histogram(tensor, name, dir=""):
     for _, i in enumerate(hist):
         line = line + "{}, ".format(i)
     line = line + "\nMIN: {}, MAX: {} BINS: {}".format(MIN, MAX, BINS)
-    # f.write(line)
+    f.write(line)
 
     fig = plt.figure()
     rng = np.arange(len(hist))

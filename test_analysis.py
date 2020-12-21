@@ -16,6 +16,7 @@ import argparse
 import glob
 
 import os
+import random
 
 if __name__ == '__main__':
 
@@ -27,11 +28,9 @@ if __name__ == '__main__':
 
     TEST_MODE = True if torch.cuda.is_available() else False
 
-    
     # Information of Train
 
-    train_info = "201028"
-
+    train_info = ""
     if train_info != "":
         checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
         RESULT_DIR = "./result/result_{}".format(train_info)
@@ -48,66 +47,59 @@ if __name__ == '__main__':
 
     MODEL_NAME = opt.model_name
     IMAGE_NAME = opt.image_name
-    # testset = "C:/Users/IVP/Desktop/data/val_hz"
-    # testset = "C:/Users/IVP/Desktop/data/ntire2018_hz"
 
     testset = "test"
-    
     test_list = glob.glob(testset+ '/*.*')
 
     net = Net1(3, 3)
-
     model = net.eval()
-
     model.load_state_dict(torch.load(checkpoint_dir + '/checkpoint_100.pth'))
-
     model.cuda()
     
+    params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad: 
+            continue
+        param = parameter.numel()
+        params = params + param
+        print(name, param)
+    print(params)
+
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
 
-    count = 0
+    img = random.choice(test_list)
+    image = Image.open(img).convert('RGB')
+    w, h = image.size
+    if w > 2000:
+        w = w // 4
+        h = h // 4
+    if h > 2000:
+        w = w // 4
+        h = h // 4
 
-    for i, img in enumerate(test_list):
+    bias = 4
+    if w % bias != 0:
+        w = w - (w % bias)
+    if h % bias != 0:
+        h = h - (h % bias)
+    
+    t_info = [
+            transforms.Resize((h, w), Image.BICUBIC),
+            transforms.ToTensor(),
+            # transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
+        ]        
+    transform = transforms.Compose(t_info)
+            
+    image = transform(image).unsqueeze_(0)
+    image = Variable(image.type(Tensor))
+    image = image.cuda()
 
-        if count == 1: break
-        count = count + 1
+    with torch.no_grad():
+        dehaze = model(image)
 
-        image = Image.open(img).convert('RGB')
-        w, h = image.size
-        if w > 2000:
-            w = w // 4
-            h = h // 4
-        if h > 2000:
-            w = w // 4
-            h = h // 4
+    img_name = os.path.basename(img)
 
-        bias = 4
-        if w % bias != 0:
-            w = w - (w % bias)
-        if h % bias != 0:
-            h = h - (h % bias)
-        
-        t_info = [
-                transforms.Resize((h, w), Image.BICUBIC),
-                transforms.ToTensor(),
-                # transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))
-            ]
-        
-        transform = transforms.Compose(t_info)
-                
-        image = transform(image).unsqueeze_(0)
-        image = Variable(image.type(Tensor))
-        image = image.cuda()
+    save_image(image, './histogram/input.png')
+    save_image(dehaze, './histogram/output.png', normalize=True)
 
-        with torch.no_grad():
-            dehaze = model(image)\
-
-        idx = 0
-        layer_name = ""
-        # result = torch.cat((image, dehaze), -1).to('cpu')
-        result = dehaze
-
-        img_name = os.path.basename(img)
-        # save_image(dehaze, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
-        save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
-        print(img + " Done")
+    print(img + " Done")

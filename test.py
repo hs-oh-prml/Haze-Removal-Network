@@ -25,19 +25,26 @@ if __name__ == '__main__':
 
     
     # Information of Train
-    train_info = ""
-    checkpoint_dir = "./checkpoints"
-    RESULT_DIR = "./result"
+    train_info = "LoG7x7"
+    RESULT_DIR = ""
+
+    if train_info != "":
+        checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
+        RESULT_DIR = "./result/result_{}".format(train_info)
+    else:
+        checkpoint_dir = "./checkpoints/"
+        RESULT_DIR = "./result/"
     if not(os.path.isdir(checkpoint_dir)):
         os.makedirs(os.path.join(checkpoint_dir))
-
     if not(os.path.isdir(RESULT_DIR)):
         os.makedirs(os.path.join(RESULT_DIR))
 
     MODEL_NAME = opt.model_name
-    TEST_PATH = opt.test_path
-    test_list = glob.glob('{}'.format(TEST_PATH))
+    # TEST_PATH = opt.test_path
+    TEST_PATH = "C:/Users/IVP/Desktop/data/새 폴더/val_hz/*.*"
 
+    test_list = glob.glob('{}'.format(TEST_PATH))
+    print("Number of test data: {}".format(len(test_list)))
     net = Net1(3, 3)
 
     model = net.eval()
@@ -82,6 +89,6 @@ if __name__ == '__main__':
         result = torch.cat((image, dehaze), -1)
         img_name = os.path.basename(img)
 
-        save_image(result, RESULT_DIR + '/dehaze_{}.png'.format(img_name), nrow=5, normalize=True)
+        save_image(dehaze, RESULT_DIR + '/dehaze_{}.png'.format(img_name), normalize=True)
 
         print(img + " Done")
