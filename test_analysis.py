@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # Information of Train
 
-    train_info = ""
+    train_info = "LoG5x5_analysis"
     if train_info != "":
         checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
         RESULT_DIR = "./result/result_{}".format(train_info)
@@ -67,7 +67,9 @@ if __name__ == '__main__':
 
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
 
-    img = random.choice(test_list)
+    # img = random.choice(test_list)
+    # 'img' is Test image Path 
+    img = "C:/Users/IVP/Documents/GitHub/Haze-Removal-Network/test/hz_indoor_1032.jpg"
     image = Image.open(img).convert('RGB')
     w, h = image.size
     if w > 2000:
@@ -94,12 +96,13 @@ if __name__ == '__main__':
     image = Variable(image.type(Tensor))
     image = image.cuda()
 
+    name = "Test_{}".format(img.split('/')[-1])
     with torch.no_grad():
-        dehaze = model(image)
-
+        # dehaze = model(image)
+        dehaze = model(image, name, True)
     img_name = os.path.basename(img)
 
-    save_image(image, './histogram/input.png')
-    save_image(dehaze, './histogram/output.png', normalize=True)
+    save_image(image, './histogram/{}/input.png'.format(name))
+    save_image(dehaze, './histogram/{}/output.png'.format(name), normalize=True)
 
     print(img + " Done")

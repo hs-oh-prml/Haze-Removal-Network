@@ -27,7 +27,7 @@ import os
 import colorsys
 
 # Information of Train
-train_info = "LoG3x3"
+train_info = "LoG5x5_analysis"
 
 if train_info != "":
     checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
@@ -42,88 +42,111 @@ if not(os.path.isdir(sample_dir)):
     os.makedirs(os.path.join(sample_dir))
 
 # Edge Detection Filter
-LoG3x3 = torch.Tensor(np.array([[
-                [
-                [ 0, -1, -1],
-                [ -1, 4, -1],
-                [0,-1, 0],
-                ],
-                [
-                [ 0, -1, -1],
-                [ -1, 4, -1],
-                [0,-1, 0],
-                ],
-                [
-                [ 0, -1, -1],
-                [ -1, 4, -1],
-                [0,-1, 0],
-                ]
-            ]], dtype=np.float64)).cuda()
-LoG5x5 = torch.Tensor(np.array([[
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ],
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ],
-                [
-                [ 0, 0, -1, 0, 0],
-                [ 0,-1, -2,-1, 0],
-                [-1,-2, 16,-2,-1],
-                [ 0,-1, -2,-1, 0],
-                [ 0, 0, -1, 0, 0],
-                ]
-            ]], dtype=np.float64)).cuda()
-LoG7x7 = torch.Tensor(np.array([[
-                [
-                [ 0, 0,-1,-1,-1, 0, 0],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [-1,-3, 7,24, 7,-3,-1],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [ 0, 0,-1,-1,-1, 0, 0],
-                ],
-                [
-                [ 0, 0,-1,-1,-1, 0, 0],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [-1,-3, 7,24, 7,-3,-1],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [ 0, 0,-1,-1,-1, 0, 0],
-                ],
-                [
-                [ 0, 0,-1,-1,-1, 0, 0],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [-1,-3, 7,24, 7,-3,-1],
-                [-1,-3, 0, 7, 0,-3,-1],
-                [ 0,-1,-3,-3,-3,-1, 0],
-                [ 0, 0,-1,-1,-1, 0, 0],
-                ],
-            ]], dtype=np.float64)).cuda()
+# LoG3x3 = torch.Tensor(np.array([[
+#                 [
+#                 [ 0, -1, -1],
+#                 [ -1, 4, -1],
+#                 [0,-1, 0],
+#                 ],
+#                 [
+#                 [ 0, -1, -1],
+#                 [ -1, 4, -1],
+#                 [0,-1, 0],
+#                 ],
+#                 [
+#                 [ 0, -1, -1],
+#                 [ -1, 4, -1],
+#                 [0,-1, 0],
+#                 ]
+#             ]], dtype=np.float64)).cuda()
+# LoG5x5 = torch.Tensor(np.array([[
+#                 [
+#                 [ 0, 0, -1, 0, 0],
+#                 [ 0,-1, -2,-1, 0],
+#                 [-1,-2, 16,-2,-1],
+#                 [ 0,-1, -2,-1, 0],
+#                 [ 0, 0, -1, 0, 0],
+#                 ],
+#                 [
+#                 [ 0, 0, -1, 0, 0],
+#                 [ 0,-1, -2,-1, 0],
+#                 [-1,-2, 16,-2,-1],
+#                 [ 0,-1, -2,-1, 0],
+#                 [ 0, 0, -1, 0, 0],
+#                 ],
+#                 [
+#                 [ 0, 0, -1, 0, 0],
+#                 [ 0,-1, -2,-1, 0],
+#                 [-1,-2, 16,-2,-1],
+#                 [ 0,-1, -2,-1, 0],
+#                 [ 0, 0, -1, 0, 0],
+#                 ]
+#             ]], dtype=np.float64)).cuda()
+# LoG7x7 = torch.Tensor(np.array([[
+#                 [
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [-1,-3, 7,24, 7,-3,-1],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 ],
+#                 [
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [-1,-3, 7,24, 7,-3,-1],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 ],
+#                 [
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [-1,-3, 7,24, 7,-3,-1],
+#                 [-1,-3, 0, 7, 0,-3,-1],
+#                 [ 0,-1,-3,-3,-3,-1, 0],
+#                 [ 0, 0,-1,-1,-1, 0, 0],
+#                 ],
+#             ]], dtype=np.float64)).cuda()
 
 def save_images(batches_done, dataloader, net, hz, gt, dehaze):
     Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor    
 
     """Saves a generated sample from the validation set"""
+    LoG5x5 = torch.Tensor(np.array([[
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ]
+                ]], dtype=np.float64)).cuda()
 
-    edge_hz = F.conv2d(hz, LoG3x3, padding=1) 
-    edge_dhz = F.conv2d(dehaze, LoG3x3, padding=1) 
-    edge_gt = F.conv2d(gt, LoG3x3, padding=1)
+    # edge_hz = F.conv2d(hz, LoG3x3, padding=1) 
+    # edge_dhz = F.conv2d(dehaze, LoG3x3, padding=1) 
+    # edge_gt = F.conv2d(gt, LoG3x3, padding=1)
     
-    # edge_hz = F.conv2d(hz, LoG5x5, padding=2) 
-    # edge_dhz = F.conv2d(dehaze, LoG5x5, padding=2) 
-    # edge_gt = F.conv2d(gt, LoG5x5, padding=2)
+    edge_hz = F.conv2d(hz, LoG5x5, padding=2) 
+    edge_dhz = F.conv2d(dehaze, LoG5x5, padding=2) 
+    edge_gt = F.conv2d(gt, LoG5x5, padding=2)
 
     # edge_hz = F.conv2d(hz, LoG7x7, padding=3) 
     # edge_dhz = F.conv2d(dehaze, LoG7x7, padding=3) 
@@ -191,7 +214,11 @@ def train():
 
     loss_list = []
 
+    analysis = False
     for epoch in range(opt.epoch, opt.epoch + opt.n_epochs):
+
+        if not analysis: analysis = True
+
         temp_loss_list = []        
         print('Epoch {}/{}'.format(epoch + 1, opt.epoch + opt.n_epochs))
         print('-' * 70)
@@ -205,14 +232,54 @@ def train():
             #         NetWork         #
             #############################
             optimizer.zero_grad()
-            dehaze = net(hz)
+            dehaze = net(hz, "", False)
 
+            if analysis : 
+                analysis_img = "C:/Users/IVP/Documents/GitHub/Haze-Removal-Network/test/hz_indoor_1032.jpg"
+                a_image = Image.open(analysis_img).convert('RGB')
+                w, h = a_image.size
+                t_info = [
+                        transforms.Resize((h, w), Image.BICUBIC),
+                        transforms.ToTensor(),
+                    ]        
+                transform = transforms.Compose(t_info)
+                        
+                a_image = transform(a_image).unsqueeze_(0)
+                a_image = Variable(a_image.type(Tensor))
+                a_image = a_image.cuda()
+                name = "Epoch_{}_{}".format(epoch, analysis_img.split('/')[-1])
+                net(a_image, name, analysis)
+                analysis = False
+
+            LoG5x5 = torch.Tensor(np.array([[
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ],
+                    [
+                    [ 0, 0, -1, 0, 0],
+                    [ 0,-1, -2,-1, 0],
+                    [-1,-2, 16,-2,-1],
+                    [ 0,-1, -2,-1, 0],
+                    [ 0, 0, -1, 0, 0],
+                    ]
+                ]], dtype=np.float64)).cuda()
             # Compute Edge Loss
-            edge_dhz = F.conv2d(dehaze, LoG3x3, padding=1)
-            edge_gt = F.conv2d(gt, LoG3x3, padding=1)
+            # edge_dhz = F.conv2d(dehaze, LoG5x5, padding=1)
+            # edge_gt = F.conv2d(gt, LoG5x5, padding=1)
 
-            # edge_dhz = F.conv2d(dehaze, LoG5x5, padding=2)
-            # edge_gt = F.conv2d(gt, LoG5x5, padding=2)
+            edge_dhz = F.conv2d(dehaze, LoG5x5, padding=2)
+            edge_gt = F.conv2d(gt, LoG5x5, padding=2)
 
             # edge_dhz = F.conv2d(dehaze, LoG7x7, padding=3)
             # edge_gt = F.conv2d(gt, LoG7x7, padding=3)
