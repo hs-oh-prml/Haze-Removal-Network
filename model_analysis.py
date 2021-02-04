@@ -358,91 +358,69 @@ def histogram(tensor, name, dir=""):
     global analysis_flag
     if not analysis_flag: return 
     global global_name
-
     filename = global_name.split(".jpg")[0]
-    # try:
-    #     wb = openpyxl.load_workbook("./histogram/{}_{}.xlsx".format(filename))
-    # except:
-    wb = openpyxl.Workbook()
 
-
+    #################### Histogram Excel #####################
     features = torch.squeeze(tensor)
-    # print(feautres.shape)
-
-    # path = "./histogram/{}/{}".format(global_name, dir)
-    # if not(os.path.isdir(path)):
-    #     os.makedirs(os.path.join(path))
-    
+    wb = openpyxl.Workbook()    
     sheet = wb.create_sheet(name)
-
     row = 1
     for idx, feature in enumerate(features):
-    #     MAX = torch.max(feature).cpu().data
-    #     MIN = torch.min(feature).cpu().data
-    #     print("MIN: %.4f, " % MIN + "MAX: %.4f" % MAX)
-        # print(global_name)
-        # print(name)
         sheet.append([''])
         col = 1
         print(feature.shape)
         for r, k in enumerate(feature):
             # cols = []
             for c, l in enumerate(k):
-                # column_variable =  get_column_letter(col+c+1)
-                # print(column_variable)
-                sheet.cell((row+r), (col+c), l.item())
-                
-                # print(type(l.item()))
-                # cols.append(l.item())
-                # line += "{} ".format(l)
-            # print(list(k.size())[0])
+                sheet.cell((row+r), (col+c), l.item())                
         row = row + list(feature.size())[0] + 1
-    col = col + list(k.size())[0] + 1
-    
+    col = col + list(k.size())[0] + 1    
     wb.save("./histogram/{}_{}.xlsx".format(filename, name))
-        # path = "./histogram/{}/{}".format(global_name, name)
-        # if not(os.path.isdir(path)):
-        #     os.makedirs(os.path.join(path))
+    ##########################################################
+
     
-        # sns.heatmap(feature.cpu(), cmap="YlGnBu")
-        # heatmap_file = "{} {}.png".format(name, idx + 1)
-        # plt.title(heatmap_file)
-        # # plt.show()
-        # plt.savefig(path+"/{}.png".format(heatmap_file), dpi=300)
-        # plt.close()
+    ################### Histogram Heatmap ####################
+    # path = "./histogram/{}/{}".format(global_name, dir)
+    # if not(os.path.isdir(path)):
+    #     os.makedirs(os.path.join(path))
+    # for idx, feature in enumerate(features):
+    #     path = "./histogram/{}/{}".format(global_name, name)
+    #     if not(os.path.isdir(path)):
+    #         os.makedirs(os.path.join(path))
+    
+    #     sns.heatmap(feature.cpu(), cmap="YlGnBu")
+    #     heatmap_file = "{} {}.png".format(name, idx + 1)
+    #     plt.title(heatmap_file)
+    #     # plt.show()
+    #     plt.savefig(path+"/{}.png".format(heatmap_file), dpi=300)
+    #     plt.close()
+    ##########################################################
 
-        # print(feature.shape)
 
-    # heatmap = tensor
-    # heatmap = np.uint8(255*heatmap)
-
-
+    ##################### Histogram&txt ######################
+    # path = "./histogram/{}/{}".format(global_name, dir)
+    # if not(os.path.isdir(path)):
+    #     os.makedirs(os.path.join(path))
     # f = open(path + "/{}.txt".format(name), 'w')
-    
-    MAX = torch.max(tensor).cpu().data
-    MIN = torch.min(tensor).cpu().data
-    print("MIN: %.4f, " % MIN + "MAX: %.4f" % MAX)
-
+    # MAX = torch.max(tensor).cpu().data
+    # MIN = torch.min(tensor).cpu().data
+    # print("MIN: %.4f, " % MIN + "MAX: %.4f" % MAX)
     # BINS = 100
-    
     # hist = torch.histc(tensor, bins=BINS, min=MIN, max=MAX).clone().cpu().data.numpy()
-
     # line = "{}\n".format(name)
     # for _, i in enumerate(hist):
     #     line = line + "{}, ".format(i)
     # line = line + "\nMIN: {}, MAX: {} BINS: {}".format(MIN, MAX, BINS)
     # f.write(line)
-
     # fig = plt.figure()
     # rng = np.arange(len(hist))
-
     # plt.bar(rng, hist)
-
     # if MAX - MIN == 0:
     #     temp = MIN.clone().cpu().data.numpy()
     #     plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["","","","", temp - 1, temp, temp + 1,"","",""])
     # else:
     #     plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["%.2f" %x for x in np.arange(MIN, MAX, (MAX-MIN)/(BINS//10))], rotation=30)
-
     # plt.savefig(path+"/{}.png".format(name), dpi=300)
     # plt.close()
+    ##########################################################
+    
