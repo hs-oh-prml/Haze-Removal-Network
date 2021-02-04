@@ -14,6 +14,9 @@ import numpy as np
 import math 
 import os
 from torchvision.utils import save_image
+import seaborn as sns
+import openpyxl
+from openpyxl.utils import get_column_letter
 
 class ResidualBlockBottleNeck(nn.Module):
     def __init__(self, in_features, idx):
@@ -49,30 +52,30 @@ class ResidualBlockBottleNeck(nn.Module):
         idx = self.idx 
 
         out = self.conv1x1_1(x)
-        histogram(out, "({}) post_conv1x1_residualBlock3_{}".format(idx * 10 + 12, idx))
+        histogram(out, "({}) post_conv1x1_residualBlock".format(idx * 10 + 12))
         out = self.gn1(out)
-        histogram(out, "({}) post_groupNorm_residualBlock3_{}".format(idx * 10 + 13, idx))
+        histogram(out, "({}) post_groupNorm_residualBlock".format(idx * 10 + 13))
         out = self.relu(out)
-        histogram(out, "({}) post_relu_residualBlock3_{}".format(idx * 10 + 14, idx))
+        histogram(out, "({}) post_relu_residualBlock".format(idx * 10 + 14))
 
         out = self.reflectionPad(out)
 
         out = self.conv3x3(out)
-        histogram(out, "({}) post_conv3x3_residualBlock3_{}".format(idx * 10 + 15, idx))
+        histogram(out, "({}) post_conv3x3_residualBlock".format(idx * 10 + 15))
         out = self.gn2(out)
-        histogram(out, "({}) post_groupNorm_residualBlock3_{}".format(idx * 10 + 16, idx))
+        histogram(out, "({}) post_groupNorm_residualBlock".format(idx * 10 + 16))
         out = self.relu(out)
-        histogram(out, "({}) post_relu_residualBlock3_{}".format(idx * 10 + 17, idx))
+        histogram(out, "({}) post_relu_residualBlock".format(idx * 10 + 17))
 
         out = self.conv1x1_2(out)
-        histogram(out, "({}) post_conv1x1_2_residualBlock3_{}".format(idx * 10 + 18, idx))
+        histogram(out, "({}) post_conv1x1_2_residualBlock".format(idx * 10 + 18))
         out = self.gn3(out)
-        histogram(out, "({}) post_groupNorm_residualBlock3_{}".format(idx * 10 + 19, idx))
+        histogram(out, "({}) post_groupNorm_residualBlock".format(idx * 10 + 19))
         out = self.relu(out)
-        histogram(out, "({}) post_relu_residualBlock3_{}".format(idx * 10 + 20, idx))
+        histogram(out, "({}) post_relu_residualBlock".format(idx * 10 + 20))
 
         out = out + x
-        histogram(out, "({}) post_residualBlock3_{}".format(idx * 10 + 21, idx))
+        histogram(out, "({}) post_residualBlock".format(idx * 10 + 21))
 
         return out
         # return x + self.conv_block(x)
@@ -201,6 +204,7 @@ class Net1(nn.Module):
 
         init_block = self.reflectionPad(x)
         histogram(init_block, "(2) pre_conv_init_block")
+        # print(self.init_conv.parameters())
         init_block = self.init_conv(init_block)
         histogram(init_block, "(3) post_conv_init_block")
 
@@ -276,12 +280,14 @@ class Net1(nn.Module):
         # upSampling1 = self.relu(upSampling1)
         # histogram(upSampling1, "(10) post_rele_upSampling1")
         # 172
-        upSampling1 = self.upSampling1_deconv(torch.cat([downSampleing2, residualBlock3], 1))          # 128
-        histogram(upSampling1, "(172) post_deconv_upSampling1")
+        concat1 = torch.cat([downSampleing2, residualBlock3], 1)
+        histogram(concat1, "(172) pre_deconv_upSampling1(concat)")
+        upSampling1 = self.upSampling1_deconv(concat1)          # 128
+        histogram(upSampling1, "(173) post_deconv_upSampling1")
         upSampling1 = self.upSampling1_gn(upSampling1)
-        histogram(upSampling1, "(173) post_groupNorm_upSampling1")
+        histogram(upSampling1, "(174) post_groupNorm_upSampling1")
         upSampling1 = self.relu(upSampling1)
-        histogram(upSampling1, "(174) post_relu_upSampling1")
+        histogram(upSampling1, "(175) post_relu_upSampling1")
 
         # idx = 0
         # for layer in upSampling1[0]:
@@ -293,13 +299,16 @@ class Net1(nn.Module):
         # histogram(upSampling2, "(11) pre_relu_upSampling2")
         # upSampling2 = self.relu(upSampling2)
         # histogram(upSampling2, "(12) post_relu_upSampling2")
-        
-        upSampling2 = self.upSampling2_deconv(torch.cat([upSampling1, downSampleing1], 1))          # 128
-        histogram(upSampling2, "(175) post_deconv_upSampling2")
+
+        concat2 = torch.cat([upSampling1, downSampleing1], 1)
+        histogram(concat2, "(176) pre_deconv_upSampling2(concat)")
+
+        upSampling2 = self.upSampling2_deconv(concat2)          # 128
+        histogram(upSampling2, "(177) post_deconv_upSampling2")
         upSampling2 = self.upSampling2_gn(upSampling2)
-        histogram(upSampling2, "(176) post_groupNorm_upSampling2")
+        histogram(upSampling2, "(178) post_groupNorm_upSampling2")
         upSampling2 = self.relu(upSampling2)
-        histogram(upSampling2, "(177) post_relu_upSampling2")
+        histogram(upSampling2, "(179) post_relu_upSampling2")
 
         # idx = 0
         # for layer in upSampling2[0]:
@@ -315,9 +324,11 @@ class Net1(nn.Module):
 
         out_block = self.reflectionPad(upSampling2)
         out_block = self.out_block_conv(out_block)
-        histogram(out_block, "(178) post_conv_out_block")
+        histogram(out_block, "(180) post_conv_out_block")
+        # out_block = self.out_block_gn(out_block)
+        # histogram(out_block, "(181) post_groupNorm_out_block")
         out_block = self.tanh(out_block)
-        histogram(out_block, "(179) post_tanh_out_block")
+        histogram(out_block, "(181) post_tanh_out_block")
 
         # idx = 0
         # for layer in out_block[0]:
@@ -329,7 +340,7 @@ class Net1(nn.Module):
         out = x + out_block
 
         # J = I + R
-        histogram(out, "(180) output")
+        histogram(out, "(182) output")
 
         # hist1 = torch.histc(x, bins=100, min=-1, max=1).clone().cpu().data.numpy()
         # hist2 = torch.histc(out_block, bins=100, min=-1, max=1).clone().cpu().data.numpy()
@@ -342,39 +353,96 @@ class Net1(nn.Module):
                 
         return out
 
+
 def histogram(tensor, name, dir=""):
     global analysis_flag
     if not analysis_flag: return 
     global global_name
 
-    path = "./histogram/{}/{}".format(global_name, dir)
-    if not(os.path.isdir(path)):
-        os.makedirs(os.path.join(path))
+    filename = global_name.split(".jpg")[0]
+    # try:
+    #     wb = openpyxl.load_workbook("./histogram/{}_{}.xlsx".format(filename))
+    # except:
+    wb = openpyxl.Workbook()
 
-    f = open(path + "/{}.txt".format(name), 'w')
+
+    features = torch.squeeze(tensor)
+    # print(feautres.shape)
+
+    # path = "./histogram/{}/{}".format(global_name, dir)
+    # if not(os.path.isdir(path)):
+    #     os.makedirs(os.path.join(path))
+    
+    sheet = wb.create_sheet(name)
+
+    row = 1
+    for idx, feature in enumerate(features):
+    #     MAX = torch.max(feature).cpu().data
+    #     MIN = torch.min(feature).cpu().data
+    #     print("MIN: %.4f, " % MIN + "MAX: %.4f" % MAX)
+        # print(global_name)
+        # print(name)
+        sheet.append([''])
+        col = 1
+        print(feature.shape)
+        for r, k in enumerate(feature):
+            # cols = []
+            for c, l in enumerate(k):
+                # column_variable =  get_column_letter(col+c+1)
+                # print(column_variable)
+                sheet.cell((row+r), (col+c), l.item())
+                
+                # print(type(l.item()))
+                # cols.append(l.item())
+                # line += "{} ".format(l)
+            # print(list(k.size())[0])
+        row = row + list(feature.size())[0] + 1
+    col = col + list(k.size())[0] + 1
+    
+    wb.save("./histogram/{}_{}.xlsx".format(filename, name))
+        # path = "./histogram/{}/{}".format(global_name, name)
+        # if not(os.path.isdir(path)):
+        #     os.makedirs(os.path.join(path))
+    
+        # sns.heatmap(feature.cpu(), cmap="YlGnBu")
+        # heatmap_file = "{} {}.png".format(name, idx + 1)
+        # plt.title(heatmap_file)
+        # # plt.show()
+        # plt.savefig(path+"/{}.png".format(heatmap_file), dpi=300)
+        # plt.close()
+
+        # print(feature.shape)
+
+    # heatmap = tensor
+    # heatmap = np.uint8(255*heatmap)
+
+
+    # f = open(path + "/{}.txt".format(name), 'w')
     
     MAX = torch.max(tensor).cpu().data
     MIN = torch.min(tensor).cpu().data
-    BINS = 100
+    print("MIN: %.4f, " % MIN + "MAX: %.4f" % MAX)
+
+    # BINS = 100
     
-    hist = torch.histc(tensor, bins=BINS, min=MIN, max=MAX).clone().cpu().data.numpy()
+    # hist = torch.histc(tensor, bins=BINS, min=MIN, max=MAX).clone().cpu().data.numpy()
 
-    line = "{}\n".format(name)
-    for _, i in enumerate(hist):
-        line = line + "{}, ".format(i)
-    line = line + "\nMIN: {}, MAX: {} BINS: {}".format(MIN, MAX, BINS)
-    f.write(line)
+    # line = "{}\n".format(name)
+    # for _, i in enumerate(hist):
+    #     line = line + "{}, ".format(i)
+    # line = line + "\nMIN: {}, MAX: {} BINS: {}".format(MIN, MAX, BINS)
+    # f.write(line)
 
-    fig = plt.figure()
-    rng = np.arange(len(hist))
+    # fig = plt.figure()
+    # rng = np.arange(len(hist))
 
-    plt.bar(rng, hist)
+    # plt.bar(rng, hist)
 
-    if MAX - MIN == 0:
-        temp = MIN.clone().cpu().data.numpy()
-        plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["","","","", temp - 1, temp, temp + 1,"","",""])
-    else:
-        plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["%.2f" %x for x in np.arange(MIN, MAX, (MAX-MIN)/(BINS//10))], rotation=30)
+    # if MAX - MIN == 0:
+    #     temp = MIN.clone().cpu().data.numpy()
+    #     plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["","","","", temp - 1, temp, temp + 1,"","",""])
+    # else:
+    #     plt.xticks(np.arange(len(hist), step=len(hist)/(BINS//10)), ["%.2f" %x for x in np.arange(MIN, MAX, (MAX-MIN)/(BINS//10))], rotation=30)
 
-    plt.savefig(path+"/{}.png".format(name), dpi=300)
-    plt.close()
+    # plt.savefig(path+"/{}.png".format(name), dpi=300)
+    # plt.close()

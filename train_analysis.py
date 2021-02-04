@@ -26,6 +26,11 @@ import cv2
 import os
 import colorsys
 
+from analysis_weight import Analysis_weight
+
+import openpyxl
+from openpyxl.utils import get_column_letter
+
 # Information of Train
 train_info = "LoG5x5_analysis"
 
@@ -215,9 +220,11 @@ def train():
     loss_list = []
 
     analysis = False
+    
     for epoch in range(opt.epoch, opt.epoch + opt.n_epochs):
 
-        if not analysis: analysis = True
+        # if not analysis: analysis = True
+        if epoch != 0: break
 
         temp_loss_list = []        
         print('Epoch {}/{}'.format(epoch + 1, opt.epoch + opt.n_epochs))
@@ -234,6 +241,9 @@ def train():
             optimizer.zero_grad()
             dehaze = net(hz, "", False)
 
+            if i < 10:
+                Analysis_weight(net, "step_{}".format(i))
+
             if analysis : 
                 analysis_img = "C:/Users/IVP/Documents/GitHub/Haze-Removal-Network/test/hz_indoor_1032.jpg"
                 a_image = Image.open(analysis_img).convert('RGB')
@@ -249,6 +259,7 @@ def train():
                 a_image = a_image.cuda()
                 name = "Epoch_{}_{}".format(epoch, analysis_img.split('/')[-1])
                 net(a_image, name, analysis)
+                
                 analysis = False
 
             LoG5x5 = torch.Tensor(np.array([[

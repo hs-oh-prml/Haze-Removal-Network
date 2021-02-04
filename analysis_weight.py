@@ -11,21 +11,9 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 TEST_MODE = True if torch.cuda.is_available() else False
 
-train_info = "LoG5x5_analysis"
-for epoch in range(100):
-    if train_info != "":
-        checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
-    else:
-        checkpoint_dir = "./checkpoints/"
-
-    net = Net1(3, 3)
-    model = net.eval()
-    model.load_state_dict(torch.load(checkpoint_dir + '/checkpoint_{}.pth'.format(epoch+1)))
-    model.cuda()
-
+def Analysis_weight(model, file_name):
     wb = openpyxl.Workbook()
-
-    params = 0
+    
     for name, parameter in model.named_parameters():
         if not parameter.requires_grad: 
             continue
@@ -83,8 +71,21 @@ for epoch in range(100):
                 
 
 
-        params = params + param
+        # params = params + param
         # print(name, param)
-    print(params)
+    # print(params)
 
-    wb.save("./weight/Epoch_{}.xlsx".format(epoch+1))
+    wb.save("./weight/{}.xlsx".format(file_name))
+
+# train_info = "LoG5x5_analysis"
+# for epoch in range(100):
+#     if train_info != "":
+#         checkpoint_dir = "./checkpoints/cp_{}".format(train_info)
+#     else:
+#         checkpoint_dir = "./checkpoints/"
+
+#     net = Net1(3, 3)
+#     model = net.eval()
+#     model.load_state_dict(torch.load(checkpoint_dir + '/checkpoint_{}.pth'.format(epoch+1)))
+#     model.cuda()
+#     Analysis_weight(model)

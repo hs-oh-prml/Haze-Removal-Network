@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     
     # Information of Train
-    train_info = "LoG7x7"
+    train_info = "LoG5x5"
     RESULT_DIR = ""
 
     if train_info != "":
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     test_list = glob.glob('{}'.format(TEST_PATH))
     print("Number of test data: {}".format(len(test_list)))
-    net = Net1(3, 3)
+    net = Net1(3, 3, 100)
 
     model = net.eval()
     model.load_state_dict(torch.load(checkpoint_dir + '/{}'.format(MODEL_NAME)))
