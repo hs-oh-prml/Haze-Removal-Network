@@ -20,18 +20,18 @@ The atmospheric scattering model includes two crucial parameters for dehazing: g
 
 ### Conventional dehazing
 
-$$I(x)=J(x)t(x)+A(1-t(x)) \\
+$I(x)=J(x)t(x)+A(1-t(x)) \\
 t(x)=e^{-\beta d(x)} \\
 J(x)={1 \over t(x)}I(x)-{1 \over t(x)}A+A \\
-$$
+$
 
 ### Proposed method
 
-$$I=J(x)+H(x) \\
+$I=J(x)+H(x) \\
 H(x)=(1-{1\over t(x)})(I(x)-A) \\
 R(x)=(1-{1\over t(x)})(A-I(x)) \\
 J(x)=I(x)+R(x) \\
-$$
+$
 
 ## Network Architecture
 
