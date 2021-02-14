@@ -27,7 +27,7 @@ import os
 import colorsys
 
 # Information of Train
-train_info = "LoG5x5_2"
+train_info = "LoG5x5"
 
 if train_info != "":
     checkpoint_dir = "./checkpoints/cp_{}".format(train_info)

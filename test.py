@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     MODEL_NAME = opt.model_name
     # TEST_PATH = opt.test_path
-    TEST_PATH = "C:/Users/IVP/Desktop/data/새 폴더/val_hz/*.*"
+    TEST_PATH = "TEST DATA DIRECTORY PATH IN HERE"
 
     test_list = glob.glob('{}'.format(TEST_PATH))
     print("Number of test data: {}".format(len(test_list)))
