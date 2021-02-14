@@ -14,23 +14,6 @@ The atmospheric scattering model includes two crucial parameters for dehazing: g
 
 [https://doi.org/10.1049/ell2.12035](https://doi.org/10.1049/ell2.12035)
 
-## Haze Removal Function
-
----
-
-### Conventional dehazing
-```math
-I(x)=J(x)t(x)+A(1-t(x))
-t(x)=e^{-\beta d(x)}
-J(x)={1 \over t(x)}I(x)-{1 \over t(x)}A+A
-```
-### Proposed method
-```math
-I=J(x)+H(x)
-H(x)=(1-{1\over t(x)})(I(x)-A)
-R(x)=(1-{1\over t(x)})(A-I(x))
-J(x)=I(x)+R(x)
-```
 ## Network Architecture
 
 ---
